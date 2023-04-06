@@ -51,15 +51,15 @@ class CategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Category $category)
+    public function show($id)
     {
-        //
+        return new CatResource(Category::findOrFail($id));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Category $category)
+    public function edit($id)
     {
         //
     }
@@ -67,9 +67,35 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Category $category)
+    public function update(Request $request,$id)
     {
-        //
+
+        $updateCategory = Category::where('id',$id)->first();
+        $updateCategory->title = $request->title;
+        $updateCategory->description = $request->description;
+        try{
+            if($request->hasFile('image')){
+                $newImgName = \Str::random().'.'.$request->image->getClientOriginalExtension();
+                $exists = \Storage::disk('public')->exists('category/image/'.$updateCategory->image);
+                if($exists){
+                    \Storage::disk('public')->delete('category/image/'.$updateCategory->image);
+                }
+                \Storage::disk('public')->putFileAs('category/image/',$request->image,$newImgName);
+                $updateCategory->image = $newImgName;
+            }
+        }catch(\Exception $e){
+            \Log::error($e->getMessage());
+        }
+        if($updateCategory->save()){
+            return response()->json([
+                'message' => 'Data Successfully Updated',
+                'status' => true
+            ]);
+        }
+        return response()->json([
+            'message' => 'Failed to Update',
+            'status' => false
+        ]);
     }
 
     /**
